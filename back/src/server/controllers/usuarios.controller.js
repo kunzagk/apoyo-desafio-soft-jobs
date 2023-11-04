@@ -1,18 +1,19 @@
-const sql = require('../models/Usuarios.dao.js');
-const { jwtSign } = require('../../utils/jwt.js');
+const sql = require('../models/usuarios.dao.js');
+const jwtSign = require('../../utils/jwt.js').jwtSign;
+const { encrypt } = require('../../utils/bcrypt.js');
 
-// registrar un usuario
 exports.registerUser = function(req, res) {
-  sql.createUser(req.body.email, req.body.password, req.body.rol, req.body.lenguage)
-    .then(function([user]) {
-      res.status(201).json({ id: user.id, email: user.email });
+  const encryptedPassword = encrypt(req.body.password);
+  
+  sql.createUser(req.body.email, encryptedPassword, req.body.rol, req.body.lenguage)
+    .then(function(user) {
+      res.status(201).json({ id: user[0].id, email: user[0].email });
     })
     .catch(function(error) {
       res.status(500).json(error);
     });
 };
 
-// recibir credenciales y devolver un token
 exports.login = function(req, res) {
   sql.verifyUserCredentials(req.body.email, req.body.password)
     .then(function(user) {
@@ -27,7 +28,6 @@ exports.login = function(req, res) {
     });
 };
 
-// devolver los datos de un usuario
 exports.returnUser = function(req, res) {
   sql.getUser(req.body.email, req.body.rol, req.body.lenguage)
     .then(function(user) {

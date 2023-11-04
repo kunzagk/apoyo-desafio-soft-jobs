@@ -1,16 +1,21 @@
-const dotenv = require('dotenv');
-dotenv.config();
-
 const genericSqlQuery = require('../databases/pg.js');
+const { compare } = require('../../utils/bcrypt.js');
 
-exports.createUser = async function (email, password, rol, lenguage) {
-  return await genericSqlQuery('INSERT INTO usuarios (id, email, password, rol, lenguage) VALUES (DEFAULT ,$1, $2, $3, $4) RETURNING *;', [email, password, rol, lenguage]);
+const createUser = async (email, password, rol, lenguage) => {
+  const encryptedPassword = await encrypt(password);
+  return await genericSqlQuery('INSERT INTO usuarios (id, email, password, rol, lenguage) VALUES (DEFAULT ,$1, $2, $3, $4) RETURNING *;', [email, encryptedPassword, rol, lenguage]);
 };
 
-exports.verifyUserCredentials = async function (email, password) {
-  return await genericSqlQuery('SELECT * FROM usuarios WHERE email = $1 AND password = $2;', [email, password]);
+const verifyUserCredentials = async (email, password) => {
+  const user = await genericSqlQuery('SELECT * FROM usuarios WHERE email = $1;', [email]);
+  if (user.length > 0) {
+    const match = await compare(password, user[0].password);
+    return match ? user : [];
+  } else {
+    return [];
+  }
 };
 
-exports.getUser = async function (email, rol, lenguage) {
-  return await genericSqlQuery('SELECT * FROM usuarios WHERE email = $1 AND rol = $2 AND lenguage = $3;', [email, rol, lenguage]);
-};
+const getUser = async (email, rol, lenguage) => await genericSqlQuery('SELECT * FROM usuarios WHERE email = $1 AND rol AND = $2 lenguage = $3;', [email, rol, lenguage]);
+
+module.exports = { createUser, verifyUserCredentials, getUser };
